@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NeuroProof</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">EEG Cloud + Blockchain Prototype</p>
+          <h1>NeuroProof</h1>
+        </div>
+        <div class="topStatus">
+          <div id="ledgerStatus" class="status">원장 확인 중</div>
+          <div id="auditStatus" class="status">감사 로그 확인 중</div>
+        </div>
+      </header>
+
+      <nav class="tabs" aria-label="role views" role="tablist">
+        <button id="userTab" type="button" class="tab active" role="tab" aria-selected="true" aria-controls="userView">User</button>
+        <button id="adminTab" type="button" class="tab" role="tab" aria-selected="false" aria-controls="adminView">Admin</button>
+      </nav>
+
+      <div id="userView" class="view active" role="tabpanel" aria-labelledby="userTab">
+        <section class="flowGuide" aria-label="demo flow">
+          <div id="flowStepUpload" class="flowStep active">
+            <span>1</span>
+            <div>
+              <strong>EEG 업로드</strong>
+              <p>원본은 클라우드 저장소에 보관</p>
+            </div>
+          </div>
+          <div id="flowStepVerify" class="flowStep">
+            <span>2</span>
+            <div>
+              <strong>무결성 검증</strong>
+              <p>해시로 원본 변경 여부 확인</p>
+            </div>
+          </div>
+          <div id="flowStepConsent" class="flowStep">
+            <span>3</span>
+            <div>
+              <strong>동의 정책</strong>
+              <p>목적과 범위를 고정하고 평가</p>
+            </div>
+          </div>
+          <div id="flowStepReceipt" class="flowStep">
+            <span>4</span>
+            <div>
+              <strong>영수증 발급</strong>
+              <p>오프체인/온체인 경계 제시</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="grid">
+          <form id="uploadForm" class="panel">
+            <h2>EEG 업로드</h2>
+            <label>
+              소유자
+              <input id="ownerInput" name="owner" value="demo-user" autocomplete="off">
+            </label>
+            <label>
+              EEG CSV 파일
+              <input id="fileInput" name="file" type="file" accept=".csv,text/csv">
+            </label>
+            <div class="actions demoActions">
+              <button id="sampleButton" type="button" class="demoPrimary">샘플로 바로 시연</button>
+              <button type="submit" class="secondary">CSV 직접 업로드</button>
+            </div>
+            <p id="uploadMessage" class="message" aria-live="polite"></p>
+          </form>
+
+          <form id="verifyForm" class="panel">
+            <h2>무결성 검증</h2>
+            <label>
+              기준 기록
+              <select id="recordSelect"></select>
+            </label>
+            <label>
+              검증할 EEG CSV 파일
+              <input id="verifyFileInput" type="file" accept=".csv,text/csv">
+            </label>
+            <div class="actions wrap">
+              <button type="submit">해시 비교</button>
+              <button id="verifyStoredButton" type="button" class="secondary">원본 재검증</button>
+              <button id="verifyTamperedButton" type="button" class="secondary dangerOutline">변조 예시</button>
+            </div>
+            <p id="verifyMessage" class="message" aria-live="polite"></p>
+          </form>
+        </section>
+
+        <section class="panel wide">
+          <div class="sectionHeader">
+            <h2>선택 기록 분석</h2>
+            <div class="actions wrap">
+              <button id="downloadProofButton" type="button">증명서 다운로드</button>
+              <button id="grantAccessButton" type="button" class="secondary">접근권 발급</button>
+              <button id="revokeAccessButton" type="button" class="secondary dangerOutline">접근권 철회</button>
+            </div>
+          </div>
+          <div id="recordDetail" class="recordDetail"></div>
+          <div id="riskLabels" class="riskLabels"></div>
+          <div class="consentGovernance">
+            <div class="sectionHeader">
+              <h3>목적 제한 동의 정책</h3>
+              <span class="hint">연구 목적과 데이터 범위를 명시해 접근을 평가합니다.</span>
+            </div>
+            <div class="consentForm">
+              <label>
+                수신자
+                <input id="consentRecipient" value="research-admin" autocomplete="off">
+              </label>
+              <label>
+                목적
+                <select id="consentPurpose">
+                  <option value="research">research</option>
+                  <option value="clinical-review">clinical-review</option>
+                  <option value="marketing">marketing</option>
+                </select>
+              </label>
+              <label>
+                데이터 범위
+                <select id="consentScope">
+                  <option value="derived-summary">derived-summary</option>
+                  <option value="derived-inference">derived-inference</option>
+                  <option value="raw-eeg">raw-eeg</option>
+                </select>
+              </label>
+            </div>
+            <div class="actions wrap">
+              <button id="createPolicyButton" type="button">정책 생성</button>
+              <button id="requestAccessButton" type="button" class="secondary">접근 요청 평가</button>
+              <button id="revokePolicyButton" type="button" class="secondary dangerOutline">정책 철회</button>
+            </div>
+            <p id="consentMessage" class="message" aria-live="polite"></p>
+          </div>
+          <p id="accessMessage" class="message" aria-live="polite"></p>
+        </section>
+      </div>
+
+      <div id="adminView" class="view" role="tabpanel" aria-labelledby="adminTab">
+        <nav class="adminFilters" aria-label="admin sections">
+          <button type="button" class="adminFilter active" data-admin-filter="summary" aria-pressed="true">요약</button>
+          <button type="button" class="adminFilter" data-admin-filter="governance" aria-pressed="false">동의/접근</button>
+          <button type="button" class="adminFilter" data-admin-filter="blockchain" aria-pressed="false">블록체인</button>
+          <button type="button" class="adminFilter" data-admin-filter="audit" aria-pressed="false">감사/변조</button>
+          <button type="button" class="adminFilter" data-admin-filter="all" aria-pressed="false">전체</button>
+        </nav>
+
+        <section class="panel wide" data-admin-section="summary">
+          <div class="sectionHeader">
+            <h2>시스템 상태</h2>
+            <button id="refreshButton" type="button" class="secondary">새로고침</button>
+          </div>
+          <div id="systemMetrics" class="systemMetrics"></div>
+        </section>
+
+        <section class="panel wide" data-admin-section="summary">
+          <div class="sectionHeader">
+            <h2>논문 문제 해결 현황</h2>
+            <span class="hint">발표에서 바로 설명할 수 있는 핵심 대응입니다.</span>
+          </div>
+          <div id="governanceSummary" class="governanceSummary"></div>
+        </section>
+
+        <section class="panel wide" data-admin-section="summary">
+          <div class="sectionHeader">
+            <h2>전체 EEG 기록</h2>
+          </div>
+          <div id="records" class="records"></div>
+        </section>
+
+        <section class="panel wide" data-admin-section="governance">
+          <div class="sectionHeader">
+            <h2>접근 권한</h2>
+            <span class="hint">User가 발급하거나 철회한 연구자 접근권입니다.</span>
+          </div>
+          <div id="accessGrants" class="accessGrants"></div>
+        </section>
+
+        <section class="panel wide" data-admin-section="governance">
+          <div class="sectionHeader">
+            <h2>동의 정책 목록</h2>
+            <span class="hint">목적과 데이터 범위가 해시로 고정된 정책입니다.</span>
+          </div>
+          <div id="consentPolicies" class="consentPolicies"></div>
+        </section>
+
+        <section class="panel wide" data-admin-section="governance">
+          <div class="sectionHeader">
+            <h2>접근 요청 결과</h2>
+            <span class="hint">정책과 요청 목적이 맞는지 평가한 기록입니다.</span>
+          </div>
+          <div id="accessRequests" class="accessRequests"></div>
+        </section>
+
+        <section class="panel wide" data-admin-section="governance">
+          <div class="sectionHeader">
+            <h2>프라이버시 보존 분석 데모</h2>
+            <span class="hint">원본 EEG 없이 파생 요약값만 share로 나눠 복원합니다.</span>
+          </div>
+          <div class="actions wrap">
+            <button id="secretSharingButton" type="button">Secret Sharing 실행</button>
+          </div>
+          <div id="secretSharingResult" class="secretSharingResult"></div>
+        </section>
+
+        <section class="panel wide" data-admin-section="blockchain">
+          <div class="sectionHeader">
+            <h2>스마트컨트랙트 이벤트</h2>
+            <span class="hint">Local Mock Chain · EEGRegistry-compatible receipts</span>
+          </div>
+          <div id="blockchainReceipts" class="blockchainReceipts"></div>
+        </section>
+
+        <section class="panel wide" data-admin-section="blockchain">
+          <div class="sectionHeader">
+            <h2>블록체인형 원장</h2>
+            <span class="hint">각 블록은 이전 블록 해시를 포함합니다.</span>
+          </div>
+          <div id="ledgerBlocks" class="ledgerBlocks"></div>
+        </section>
+
+        <section class="panel wide" data-admin-section="audit">
+          <div class="sectionHeader">
+            <h2>변조 시뮬레이션</h2>
+            <span class="hint">실제 데이터는 바꾸지 않고 사본만 조작합니다.</span>
+          </div>
+          <div class="actions wrap">
+            <button id="simulateLedgerButton" type="button">원장 조작 테스트</button>
+            <button id="simulateAuditButton" type="button" class="secondary">감사 로그 조작 테스트</button>
+          </div>
+          <div id="tamperSimulationResult" class="simulationResult"></div>
+        </section>
+
+        <section class="panel wide" data-admin-section="audit">
+          <div class="sectionHeader">
+            <h2>감사 로그</h2>
+            <span class="hint">업로드, 검증, 증명서 발급 이벤트를 해시 체인으로 기록합니다.</span>
+          </div>
+          <div id="auditEvents" class="auditEvents"></div>
+        </section>
+      </div>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,28 @@
+{
+  "name": "neuroproof-prototype",
+  "version": "0.1.0",
+  "private": true,
+  "description": "EEG cloud storage and blockchain integrity prototype.",
+  "main": "server.js",
+  "scripts": {
+    "compile:contract": "node scripts/compile-contract.js",
+    "deploy:sepolia": "node scripts/deploy-sepolia.js",
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.86.0",
+    "dotenv": "^17.2.3",
+    "ethers": "^6.16.0"
+  },
+  "devDependencies": {
+    "solc": "^0.8.31"
+  },
+  "overrides": {
+    "tmp": "^0.2.6",
+    "ws": "^8.20.1"
+  }
+}
