@@ -104,6 +104,8 @@ Blueprint가 자동으로 채우는 값:
 - `SUPABASE_BUCKET=eeg-records`
 - `CHAIN_PROVIDER=sepolia`
 - `EEG_REGISTRY_ADDRESS=0xfa755F2783Df9939E74149c51f4E6121C8d55c13`
+- `METADATA_PROVIDER=supabase`
+- `SUPABASE_APP_STATE_TABLE=app_state`
 
 Render Dashboard에서 직접 입력해야 하는 secret 값:
 
@@ -111,7 +113,11 @@ Render Dashboard에서 직접 입력해야 하는 secret 값:
 - `SEPOLIA_RPC_URL`
 - `SEPOLIA_PRIVATE_KEY`
 
-무료 Render Web Service는 재시작 또는 비활성 spin-down 이후 로컬 파일 변경이 사라질 수 있습니다. Supabase Storage의 EEG CSV와 Sepolia transaction은 남지만, Render 인스턴스의 `data/*.json` UI 메타데이터는 임시 상태입니다. 장기 보존이 필요하면 `DATA_DIR`을 persistent disk 경로로 지정하거나 `data/*.json` 저장소를 Supabase Postgres로 이전합니다.
+Render 배포본은 `METADATA_PROVIDER=supabase`를 사용해 `data/*.json`에 해당하던 records, ledger, audit log, receipt 상태를 Supabase Postgres의 `app_state` 테이블에 저장합니다. 이 테이블은 RLS가 켜져 있고 서버의 service role key로만 접근합니다. 로컬 개발에서는 기본값인 `METADATA_PROVIDER=local`을 유지하면 기존처럼 `data/*.json`을 사용합니다.
+
+적용한 Supabase schema는 `docs/supabase-app-state.sql`에 기록했습니다.
+
+무료 Render Web Service는 재시작 또는 비활성 spin-down 이후 로컬 파일 변경이 사라질 수 있습니다. 이 배포 구성에서는 EEG CSV는 Supabase Storage, blockchain event는 Sepolia, UI 메타데이터는 Supabase Postgres에 저장되므로 Render 인스턴스 재시작 이후에도 시연 상태가 유지됩니다.
 
 ## 논문 문제와 프로토타입 대응
 

@@ -47,6 +47,11 @@ const {
   toBytes32
 } = require("../lib/blockchain-adapter");
 const {
+  createLocalAppStateStore,
+  metadataStatusFromEnv,
+  stateKeyFromFilePath
+} = require("../lib/app-state-store");
+const {
   createLocalStorageAdapter,
   normalizeStorageContentType,
   storageStatusFromEnv
@@ -193,6 +198,38 @@ test("storage adapter defaults to local and reads uploaded EEG content", async (
 test("storage uploads strip charset parameters from MIME type", () => {
   assert.equal(normalizeStorageContentType("text/csv; charset=utf-8"), "text/csv");
   assert.equal(normalizeStorageContentType("TEXT/PLAIN; charset=UTF-8"), "text/plain");
+});
+
+test("app state store keeps JSON file semantics for local mode", async () => {
+  const localDir = fs.mkdtempSync(path.join(os.tmpdir(), "neuroproof-state-"));
+  const filePath = path.join(localDir, "records.json");
+  const store = createLocalAppStateStore();
+
+  try {
+    assert.equal(stateKeyFromFilePath(filePath), "records");
+    assert.deepEqual(await store.readJson(filePath, []), []);
+    await store.writeJson(filePath, [{ recordId: "record-1" }]);
+    assert.deepEqual(await store.readJson(filePath, []), [{ recordId: "record-1" }]);
+    await store.writeJsonAtomic(filePath, [{ recordId: "record-2" }]);
+    assert.deepEqual(await store.readJson(filePath, []), [{ recordId: "record-2" }]);
+    assert.equal(metadataStatusFromEnv({ METADATA_PROVIDER: "local" }).configured, true);
+  } finally {
+    fs.rmSync(localDir, { recursive: true, force: true });
+  }
+});
+
+test("metadata status reports Supabase configuration", () => {
+  const status = metadataStatusFromEnv({
+    METADATA_PROVIDER: "supabase",
+    SUPABASE_URL: "https://example.supabase.co",
+    SUPABASE_SERVICE_ROLE_KEY: "secret",
+    SUPABASE_APP_STATE_TABLE: "app_state"
+  });
+
+  assert.equal(status.provider, "supabase");
+  assert.equal(status.mode, "supabase-postgres");
+  assert.equal(status.configured, true);
+  assert.equal(status.table, "app_state");
 });
 
 test("Sepolia adapter helpers build bytes32 values and local receipt hashes", () => {

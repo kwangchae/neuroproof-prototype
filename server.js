@@ -28,6 +28,10 @@ const {
   createStorageAdapter,
   storageStatusFromEnv
 } = require("./lib/cloud-storage");
+const {
+  createAppStateStore,
+  metadataStatusFromEnv
+} = require("./lib/app-state-store");
 const { riskLabelsForAnalysis } = require("./lib/risk-labels");
 const { buildSecretSharingDemo } = require("./lib/secret-sharing-demo");
 
@@ -46,6 +50,7 @@ const ACCESS_GRANTS_PATH = path.join(DATA_DIR, "access-grants.json");
 const CONSENT_POLICIES_PATH = path.join(DATA_DIR, "consent-policies.json");
 const ACCESS_REQUESTS_PATH = path.join(DATA_DIR, "access-requests.json");
 const BLOCKCHAIN_RECEIPTS_PATH = path.join(DATA_DIR, "blockchain-receipts.json");
+let appStateStore = null;
 
 function stableStringify(value) {
   if (Array.isArray(value)) {
@@ -479,25 +484,23 @@ async function ensureDataDirs() {
   await fs.mkdir(CLOUD_DIR, { recursive: true });
 }
 
-async function readJson(filePath, fallback) {
-  try {
-    return JSON.parse(await fs.readFile(filePath, "utf8"));
-  } catch (error) {
-    if (error.code === "ENOENT") {
-      return fallback;
-    }
-    throw error;
+function metadataStore() {
+  if (!appStateStore) {
+    appStateStore = createAppStateStore({ env: process.env });
   }
+  return appStateStore;
+}
+
+async function readJson(filePath, fallback) {
+  return metadataStore().readJson(filePath, fallback);
 }
 
 async function writeJson(filePath, value) {
-  await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+  await metadataStore().writeJson(filePath, value);
 }
 
 async function writeJsonAtomic(filePath, value) {
-  const tempPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
-  await fs.writeFile(tempPath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
-  await fs.rename(tempPath, filePath);
+  await metadataStore().writeJsonAtomic(filePath, value);
 }
 
 function cleanFileName(fileName) {
@@ -551,6 +554,7 @@ async function readBlockchainReceipts() {
 
 function runtimeStatus() {
   return {
+    metadata: metadataStatusFromEnv(process.env),
     storage: storageStatusFromEnv(process.env),
     blockchain: blockchainStatusFromEnv(process.env)
   };
