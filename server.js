@@ -35,7 +35,9 @@ const PORT = Number(process.env.PORT || 3000);
 const ROOT_DIR = __dirname;
 const PUBLIC_DIR = path.join(ROOT_DIR, "public");
 const SAMPLE_DIR = path.join(ROOT_DIR, "sample");
-const DATA_DIR = path.join(ROOT_DIR, "data");
+const DATA_DIR = process.env.DATA_DIR
+  ? path.resolve(process.env.DATA_DIR)
+  : path.join(ROOT_DIR, "data");
 const CLOUD_DIR = path.join(DATA_DIR, "cloud-objects");
 const LEDGER_PATH = path.join(DATA_DIR, "ledger.json");
 const RECORDS_PATH = path.join(DATA_DIR, "records.json");

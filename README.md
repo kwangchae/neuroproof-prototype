@@ -93,6 +93,26 @@ npm run deploy:sepolia
 
 서비스 키는 브라우저 코드, README, 발표 자료에 넣지 않습니다. 이 프로토타입은 서버의 `lib/cloud-storage.js`에서만 Supabase client를 만들고, 프론트엔드는 `/api/records` 같은 서버 API만 호출합니다.
 
+## Render 배포
+
+이 repo에는 Render Blueprint용 `render.yaml`이 포함되어 있습니다. Render Dashboard에서 `New` -> `Blueprint`를 선택하고 GitHub repo `kwangchae/neuroproof-prototype`를 연결하면 Web Service가 생성됩니다.
+
+Blueprint가 자동으로 채우는 값:
+
+- `STORAGE_PROVIDER=supabase`
+- `SUPABASE_URL=https://xqwudanhaqzmhylrpjyc.supabase.co`
+- `SUPABASE_BUCKET=eeg-records`
+- `CHAIN_PROVIDER=sepolia`
+- `EEG_REGISTRY_ADDRESS=0xfa755F2783Df9939E74149c51f4E6121C8d55c13`
+
+Render Dashboard에서 직접 입력해야 하는 secret 값:
+
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SEPOLIA_RPC_URL`
+- `SEPOLIA_PRIVATE_KEY`
+
+무료 Render Web Service는 재시작 또는 비활성 spin-down 이후 로컬 파일 변경이 사라질 수 있습니다. Supabase Storage의 EEG CSV와 Sepolia transaction은 남지만, Render 인스턴스의 `data/*.json` UI 메타데이터는 임시 상태입니다. 장기 보존이 필요하면 `DATA_DIR`을 persistent disk 경로로 지정하거나 `data/*.json` 저장소를 Supabase Postgres로 이전합니다.
+
 ## 논문 문제와 프로토타입 대응
 
 - 모호한 동의: 목적 제한 동의 정책이 `recipient`, `purpose`, `dataScope`를 해시로 고정합니다.

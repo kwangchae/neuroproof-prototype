@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: neuroproof-prototype
+    runtime: node
+    region: singapore
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/runtime
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: STORAGE_PROVIDER
+        value: supabase
+      - key: SUPABASE_URL
+        value: https://xqwudanhaqzmhylrpjyc.supabase.co
+      - key: SUPABASE_BUCKET
+        value: eeg-records
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: CHAIN_PROVIDER
+        value: sepolia
+      - key: SEPOLIA_RPC_URL
+        sync: false
+      - key: SEPOLIA_PRIVATE_KEY
+        sync: false
+      - key: EEG_REGISTRY_ADDRESS
+        value: 0xfa755F2783Df9939E74149c51f4E6121C8d55c13
