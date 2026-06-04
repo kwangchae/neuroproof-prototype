@@ -14,10 +14,12 @@ const flowStepConsent = document.querySelector("#flowStepConsent");
 const flowStepReceipt = document.querySelector("#flowStepReceipt");
 const ledgerStatus = document.querySelector("#ledgerStatus");
 const auditStatus = document.querySelector("#auditStatus");
+const runtimeCardsEl = document.querySelector("#runtimeCards");
 const sampleButton = document.querySelector("#sampleButton");
 const refreshButton = document.querySelector("#refreshButton");
 const verifyStoredButton = document.querySelector("#verifyStoredButton");
 const verifyTamperedButton = document.querySelector("#verifyTamperedButton");
+const uploadEvidence = document.querySelector("#uploadEvidence");
 const ledgerBlocksEl = document.querySelector("#ledgerBlocks");
 const recordDetailEl = document.querySelector("#recordDetail");
 const riskLabelsEl = document.querySelector("#riskLabels");
@@ -90,7 +92,14 @@ async function getJson(url) {
 }
 
 function shortHash(hash) {
-  return `${hash.slice(0, 10)}...${hash.slice(-8)}`;
+  const value = String(hash || "");
+  if (!value) {
+    return "-";
+  }
+  if (value.length <= 22) {
+    return value;
+  }
+  return `${value.slice(0, 10)}...${value.slice(-8)}`;
 }
 
 function downloadJson(fileName, payload) {
@@ -105,6 +114,63 @@ function downloadJson(fileName, payload) {
   URL.revokeObjectURL(url);
 }
 
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#39;"
+  })[char]);
+}
+
+function providerLabel(status) {
+  if (!status) {
+    return "-";
+  }
+
+  const suffix = status.configured ? "" : " / 설정 필요";
+  return `${status.provider || "-"} / ${status.mode || "-"}${suffix}`;
+}
+
+function runtimeDetail(status, fallback = "-") {
+  if (!status) {
+    return fallback;
+  }
+  return status.table || status.bucket || status.contractAddress || status.networkName || fallback;
+}
+
+function txExplorerUrl(receipt) {
+  if (!receipt || !receipt.txHash) {
+    return "";
+  }
+
+  const networkName = receipt.networkName || (runtime.blockchain && runtime.blockchain.networkName);
+  if (networkName === "sepolia") {
+    return `https://sepolia.etherscan.io/tx/${receipt.txHash}`;
+  }
+  return "";
+}
+
+function txLink(receipt) {
+  if (!receipt || !receipt.txHash) {
+    return "-";
+  }
+
+  const label = shortHash(receipt.txHash);
+  const url = txExplorerUrl(receipt);
+  if (!url) {
+    return escapeHtml(label);
+  }
+  return `<a class="externalLink" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a>`;
+}
+
+function latestReceiptForRecordUi(recordId, eventName) {
+  return blockchainReceipts.find((receipt) =>
+    receipt.recordId === recordId && (!eventName || receipt.eventName === eventName)
+  ) || null;
+}
+
 function renderLedgerStatus(valid) {
   ledgerStatus.textContent = valid ? "원장 정상" : "원장 손상 감지";
   ledgerStatus.className = valid ? "status ok" : "status danger";
@@ -113,6 +179,46 @@ function renderLedgerStatus(valid) {
 function renderAuditStatus(valid) {
   auditStatus.textContent = valid ? "감사 로그 정상" : "감사 로그 손상";
   auditStatus.className = valid ? "status ok" : "status danger";
+}
+
+function renderRuntimeCards() {
+  if (!runtimeCardsEl) {
+    return;
+  }
+
+  const metadata = runtime.metadata || null;
+  const storage = runtime.storage || null;
+  const blockchain = runtime.blockchain || null;
+  const cards = [
+    {
+      label: "Metadata",
+      value: providerLabel(metadata),
+      detail: metadata && metadata.table ? `Table ${metadata.table}` : runtimeDetail(metadata, "local JSON"),
+      ok: !metadata || metadata.configured
+    },
+    {
+      label: "Cloud Storage",
+      value: providerLabel(storage),
+      detail: storage && storage.bucket ? `Bucket ${storage.bucket}` : runtimeDetail(storage, "local object store"),
+      ok: !storage || storage.configured
+    },
+    {
+      label: "Blockchain",
+      value: providerLabel(blockchain),
+      detail: blockchain && blockchain.contractAddress
+        ? `${blockchain.networkName} / ${shortHash(blockchain.contractAddress)}`
+        : runtimeDetail(blockchain, "mock chain"),
+      ok: !blockchain || blockchain.configured
+    }
+  ];
+
+  runtimeCardsEl.innerHTML = cards.map((card) => `
+    <article class="runtimeCard ${card.ok ? "ok" : "missing"}">
+      <span>${escapeHtml(card.label)}</span>
+      <strong>${escapeHtml(card.value)}</strong>
+      <p>${escapeHtml(card.detail)}</p>
+    </article>
+  `).join("");
 }
 
 function switchView(viewName) {
@@ -346,6 +452,21 @@ function renderRecordDetail() {
       `;
     })
     .join("");
+  const registrationReceipt = latestReceiptForRecordUi(record.recordId, "EEGRecordRegistered");
+  const storage = record.storage || {};
+  const metadataStatus = runtime.metadata || {};
+  const storageStatus = runtime.storage || {};
+  const blockchainStatus = runtime.blockchain || {};
+  const storageLocation = storage.location || storage.objectKey || record.objectKey || "-";
+  const contractDetail = blockchainStatus.contractAddress
+    ? `${blockchainStatus.networkName || blockchainStatus.provider} / ${shortHash(blockchainStatus.contractAddress)}`
+    : runtimeDetail(blockchainStatus, "mock chain");
+  const receiptGas = registrationReceipt && Number.isFinite(Number(registrationReceipt.gasUsed))
+    ? Number(registrationReceipt.gasUsed).toLocaleString()
+    : "-";
+  const receiptDetail = registrationReceipt
+    ? `Tx ${txLink(registrationReceipt)} / Block #${registrationReceipt.blockNumber} / Gas ${receiptGas}`
+    : "등록 receipt 없음";
 
   recordDetailEl.innerHTML = `
     <div class="detailGrid">
@@ -366,6 +487,34 @@ function renderRecordDetail() {
           <div><span>Relax</span><strong>${summary.relaxationIndex ?? "-"}</strong></div>
         </div>
         ${bandRows}
+      </div>
+    </div>
+    <div class="evidenceTrail">
+      <div class="evidenceHeader">
+        <h3>보관/체인 증거</h3>
+        <span class="${registrationReceipt ? "okText" : "dangerText"}">${registrationReceipt ? statusLabel(registrationReceipt) : "receipt 없음"}</span>
+      </div>
+      <div class="evidenceGrid">
+        <div class="evidenceItem">
+          <span>Cloud Object</span>
+          <strong>${escapeHtml(storage.provider || storageStatus.provider || "-")} / ${escapeHtml(storage.contentType || "text/csv")}</strong>
+          <p>${escapeHtml(storageLocation)}</p>
+        </div>
+        <div class="evidenceItem">
+          <span>Metadata</span>
+          <strong>${escapeHtml(providerLabel(metadataStatus))}</strong>
+          <p>${escapeHtml(runtimeDetail(metadataStatus, "local JSON"))}</p>
+        </div>
+        <div class="evidenceItem">
+          <span>Contract</span>
+          <strong>${escapeHtml(providerLabel(blockchainStatus))}</strong>
+          <p>${escapeHtml(contractDetail)}</p>
+        </div>
+        <div class="evidenceItem">
+          <span>Transaction</span>
+          <strong>${escapeHtml(registrationReceipt ? statusLabel(registrationReceipt) : "-")}</strong>
+          <p>${receiptDetail}</p>
+        </div>
       </div>
     </div>
   `;
@@ -400,10 +549,10 @@ function renderLedgerBlocks() {
 }
 
 function statusLabel(receipt) {
-  if (!receipt.isValid || !receipt.isChainValid) {
+  if (receipt.isValid === false || receipt.isChainValid === false) {
     return "변조 의심";
   }
-  return receipt.status === "success" ? "검증됨" : receipt.status;
+  return receipt.status === "success" ? "검증됨" : receipt.status || "기록됨";
 }
 
 function eventSummary(receipt) {
@@ -458,7 +607,7 @@ function renderBlockchainReceipts() {
       </div>
       <div class="hashes">
         <span>${statusLabel(receipt)} / Block #${receipt.blockNumber} / Gas ${Number(receipt.gasUsed).toLocaleString()}</span>
-        <span>Tx ${shortHash(receipt.txHash)}</span>
+        <span>Tx ${txLink(receipt)}</span>
         <span>Record ${receipt.recordId || "-"}</span>
         <span>Audit ${receipt.linkedAuditEventHash ? shortHash(receipt.linkedAuditEventHash) : "-"}</span>
         <span>Receipt ${shortHash(receipt.receiptHash)}</span>
@@ -473,6 +622,9 @@ function renderBlockchainReceipts() {
 }
 
 function renderSystemMetrics({ ledgerValid, auditLogValid }) {
+  const metadataLabel = runtime.metadata
+    ? `${runtime.metadata.provider}${runtime.metadata.configured ? "" : " missing"}`
+    : "-";
   const storageLabel = runtime.storage
     ? `${runtime.storage.provider}${runtime.storage.configured ? "" : " missing"}`
     : "-";
@@ -489,6 +641,7 @@ function renderSystemMetrics({ ledgerValid, auditLogValid }) {
       <div><span>Consent Policies</span><strong>${consentPolicies.length}</strong></div>
       <div><span>Access Requests</span><strong>${accessRequests.length}</strong></div>
       <div><span>Contract Events</span><strong>${blockchainReceipts.length}</strong></div>
+      <div><span>Metadata</span><strong>${metadataLabel}</strong></div>
       <div><span>Storage</span><strong>${storageLabel}</strong></div>
       <div><span>Chain</span><strong>${chainLabel}</strong></div>
       <div><span>Integrity</span><strong>${ledgerValid && auditLogValid ? "OK" : "Check"}</strong></div>
@@ -831,6 +984,36 @@ async function verifyAccessGrant(grantId) {
   await loadRecords();
 }
 
+function renderUploadEvidence(result) {
+  if (!uploadEvidence) {
+    return;
+  }
+
+  if (!result || !result.record) {
+    uploadEvidence.innerHTML = "";
+    return;
+  }
+
+  const record = result.record;
+  const storage = record.storage || {};
+  const receipt = result.transactionReceipt || latestReceiptForRecordUi(record.recordId, "EEGRecordRegistered");
+  const txDetail = receipt
+    ? `Tx ${txLink(receipt)} / Block #${receipt.blockNumber || "-"}`
+    : "receipt 없음";
+
+  uploadEvidence.innerHTML = `
+    <div class="uploadEvidenceHeader">
+      <strong>업로드 증거</strong>
+      <span>${escapeHtml(statusLabel(receipt || { status: "기록됨" }))}</span>
+    </div>
+    <div class="uploadEvidenceRows">
+      <span>Record ${escapeHtml(record.recordId)}</span>
+      <span>Object ${escapeHtml(storage.objectKey || record.objectKey || "-")}</span>
+      <span>${txDetail}</span>
+    </div>
+  `;
+}
+
 async function loadRecords() {
   const response = await fetch("/api/records");
   const data = await response.json();
@@ -844,6 +1027,7 @@ async function loadRecords() {
   runtime = data.runtime || {};
   renderLedgerStatus(data.ledgerValid);
   renderAuditStatus(data.auditLogValid);
+  renderRuntimeCards();
   renderRecords();
   renderRecordDetail();
   renderLedgerBlocks();
@@ -860,12 +1044,18 @@ async function uploadContent({ fileName, owner, content }) {
   const result = await postJson("/api/records", { fileName, owner, content });
   renderLedgerStatus(result.ledgerValid);
   uploadMessage.textContent = `기록 완료: ${shortHash(result.record.rawHash)}`;
+  uploadMessage.className = "message okText";
   await loadRecords();
+  recordSelect.value = result.record.recordId;
+  renderRecordDetail();
+  renderUploadEvidence(result);
 }
 
 uploadForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   uploadMessage.textContent = "업로드 중...";
+  uploadMessage.className = "message";
+  renderUploadEvidence(null);
 
   try {
     const file = fileInput.files[0];
@@ -878,11 +1068,15 @@ uploadForm.addEventListener("submit", async (event) => {
     ownerInput.value = "demo-user";
   } catch (error) {
     uploadMessage.textContent = error.message;
+    uploadMessage.className = "message dangerText";
+    renderUploadEvidence(null);
   }
 });
 
 sampleButton.addEventListener("click", async () => {
   uploadMessage.textContent = "샘플 업로드 중...";
+  uploadMessage.className = "message";
+  renderUploadEvidence(null);
 
   try {
     const response = await fetch("/sample/eeg-sample.csv");
@@ -893,6 +1087,8 @@ sampleButton.addEventListener("click", async () => {
     });
   } catch (error) {
     uploadMessage.textContent = error.message;
+    uploadMessage.className = "message dangerText";
+    renderUploadEvidence(null);
   }
 });
 

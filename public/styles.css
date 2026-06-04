@@ -164,6 +164,54 @@ h3 {
   border-bottom: 1px solid #d9e0e4;
 }
 
+.runtimeStrip {
+  margin: -4px 0 16px;
+}
+
+.runtimeCards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.runtimeCard {
+  border: 1px solid #d9e0e4;
+  border-left: 4px solid #9abed0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: #ffffff;
+}
+
+.runtimeCard.ok {
+  border-left-color: #9dd4b4;
+}
+
+.runtimeCard.missing {
+  border-left-color: #e0a4a4;
+}
+
+.runtimeCard span {
+  color: #66757f;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.runtimeCard strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.runtimeCard p {
+  margin: 5px 0 0;
+  color: #66757f;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
 .tab {
   min-width: 104px;
   border-radius: 6px 6px 0 0;
@@ -308,6 +356,53 @@ button.demoPrimary {
 
 .dangerText {
   color: #a12121;
+}
+
+.externalLink {
+  color: #176b87;
+  font-weight: 900;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.uploadEvidence {
+  margin-top: 12px;
+}
+
+.uploadEvidence:empty {
+  display: none;
+}
+
+.uploadEvidenceHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid #e3e8eb;
+  padding-top: 12px;
+}
+
+.uploadEvidenceHeader strong {
+  font-size: 14px;
+}
+
+.uploadEvidenceHeader span {
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: #e1f5ea;
+  color: #14623c;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.uploadEvidenceRows {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+  color: #40505a;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+  overflow-wrap: anywhere;
 }
 
 .records {
@@ -663,6 +758,64 @@ dd {
   margin-top: 14px;
 }
 
+.evidenceTrail {
+  margin-top: 18px;
+  border-top: 1px solid #e3e8eb;
+  padding-top: 16px;
+}
+
+.evidenceHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.evidenceHeader h3 {
+  margin-bottom: 0;
+}
+
+.evidenceHeader span {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.evidenceGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.evidenceItem {
+  border: 1px solid #d9e0e4;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fbfcfc;
+}
+
+.evidenceItem span {
+  color: #66757f;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.evidenceItem strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.evidenceItem p {
+  margin: 6px 0 0;
+  color: #66757f;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
 .bandPanel {
   display: grid;
   gap: 12px;
@@ -805,6 +958,8 @@ dd {
   .metricCards,
   .detailGrid,
   .governanceLink,
+  .runtimeCards,
+  .evidenceGrid,
   .riskLabelGrid {
     grid-template-columns: 1fr;
   }

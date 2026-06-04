@@ -24,6 +24,10 @@
         <button id="adminTab" type="button" class="tab" role="tab" aria-selected="false" aria-controls="adminView">Admin</button>
       </nav>
 
+      <section class="runtimeStrip" aria-label="runtime evidence">
+        <div id="runtimeCards" class="runtimeCards"></div>
+      </section>
+
       <div id="userView" class="view active" role="tabpanel" aria-labelledby="userTab">
         <section class="flowGuide" aria-label="demo flow">
           <div id="flowStepUpload" class="flowStep active">
@@ -72,6 +76,7 @@
               <button type="submit" class="secondary">CSV 직접 업로드</button>
             </div>
             <p id="uploadMessage" class="message" aria-live="polite"></p>
+            <div id="uploadEvidence" class="uploadEvidence" aria-live="polite"></div>
           </form>
 
           <form id="verifyForm" class="panel">
@@ -212,7 +217,7 @@
         <section class="panel wide" data-admin-section="blockchain">
           <div class="sectionHeader">
             <h2>스마트컨트랙트 이벤트</h2>
-            <span class="hint">Local Mock Chain · EEGRegistry-compatible receipts</span>
+            <span class="hint">EEGRegistry-compatible receipts</span>
           </div>
           <div id="blockchainReceipts" class="blockchainReceipts"></div>
         </section>

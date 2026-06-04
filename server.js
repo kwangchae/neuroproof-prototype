@@ -673,7 +673,7 @@ async function createRecord({ fileName, owner, content }) {
       blockHash: block.blockHash
     }
   });
-  await appendBlockchainReceipt({
+  const transactionReceipt = await appendBlockchainReceipt({
     eventName: EVENT_NAMES.EEG_RECORD_REGISTERED,
     recordId,
     actor: block.owner,
@@ -688,7 +688,7 @@ async function createRecord({ fileName, owner, content }) {
     linkedAuditEventHash: auditResult.entry.eventHash
   });
 
-  return { record, ledgerValid: validateLedger(nextLedger) };
+  return { record, transactionReceipt, ledgerValid: validateLedger(nextLedger) };
 }
 
 async function createConsentPolicy(request) {
